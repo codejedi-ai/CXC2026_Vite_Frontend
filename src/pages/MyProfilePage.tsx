@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaCamera, FaSave, FaTimes, FaPlus, FaCheck } from "react-icons/fa";
+import { FaCamera, FaSave, FaTimes, FaPlus, FaCheck, FaUpload } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { uploadProfilePicture, uploadBannerPicture, validateImageFile } from "@/lib/imageUpload";
 
 const LOOKING_FOR_OPTIONS = [
   "Genuine Connection",
@@ -34,6 +35,7 @@ interface ProfileForm {
   gender: string;
   bio: string;
   avatar_url: string;
+  banner_url: string;
   location: string;
   looking_for: string;
   interests: string[];
@@ -45,6 +47,7 @@ const EMPTY_FORM: ProfileForm = {
   gender: "",
   bio: "",
   avatar_url: "",
+  banner_url: "",
   location: "",
   looking_for: "",
   interests: [],
@@ -59,13 +62,17 @@ export default function MyProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [hasProfile, setHasProfile] = useState(false);
   const [newInterest, setNewInterest] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, age, gender, bio, avatar_url, location, looking_for, interests")
+        .select("display_name, age, gender, bio, avatar_url, banner_url, location, looking_for, interests")
         .eq("user_id", user!.id)
         .maybeSingle();
 
@@ -76,6 +83,7 @@ export default function MyProfilePage() {
           gender: data.gender || "",
           bio: data.bio || "",
           avatar_url: data.avatar_url || "",
+          banner_url: data.banner_url || "",
           location: data.location || "",
           looking_for: data.looking_for || "",
           interests: data.interests || [],
@@ -86,6 +94,56 @@ export default function MyProfilePage() {
     }
     load();
   }, [user]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !e.target.files || !e.target.files[0]) return;
+
+    const file = e.target.files[0];
+    const validation = validateImageFile(file);
+
+    if (!validation.valid) {
+      setError(validation.error || "Invalid file");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setError(null);
+
+    const result = await uploadProfilePicture(file, user.id);
+
+    setUploadingAvatar(false);
+
+    if (result.success && result.url) {
+      setForm((prev) => ({ ...prev, avatar_url: result.url! }));
+    } else {
+      setError(result.error || "Upload failed");
+    }
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !e.target.files || !e.target.files[0]) return;
+
+    const file = e.target.files[0];
+    const validation = validateImageFile(file);
+
+    if (!validation.valid) {
+      setError(validation.error || "Invalid file");
+      return;
+    }
+
+    setUploadingBanner(true);
+    setError(null);
+
+    const result = await uploadBannerPicture(file, user.id);
+
+    setUploadingBanner(false);
+
+    if (result.success && result.url) {
+      setForm((prev) => ({ ...prev, banner_url: result.url! }));
+    } else {
+      setError(result.error || "Upload failed");
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -105,6 +163,7 @@ export default function MyProfilePage() {
       gender: form.gender,
       bio: form.bio.trim(),
       avatar_url: form.avatar_url.trim(),
+      banner_url: form.banner_url.trim(),
       location: form.location.trim(),
       looking_for: form.looking_for,
       interests: form.interests,
@@ -183,7 +242,46 @@ export default function MyProfilePage() {
           className="space-y-6"
         >
           <div className="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
-            <SectionLabel text="AVATAR" />
+            <SectionLabel text="BANNER IMAGE" />
+            <div className="space-y-4">
+              <div className="relative w-full h-32 rounded-xl overflow-hidden border border-[#00ffff]/20 bg-[#0a0b1a]">
+                {form.banner_url ? (
+                  <img
+                    src={form.banner_url}
+                    alt="Banner"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FaCamera className="text-gray-600 text-2xl" />
+                  </div>
+                )}
+              </div>
+              <input
+                ref={bannerInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                onChange={handleBannerUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => bannerInputRef.current?.click()}
+                disabled={uploadingBanner}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#00ffff]/30 text-[#00ffff] text-sm font-medium hover:bg-[#00ffff]/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaUpload className="text-xs" />
+                {uploadingBanner ? "Uploading..." : "Upload Banner Image"}
+              </button>
+              <p className="text-[11px] text-gray-600 font-body">Max 5MB. JPEG, PNG, WebP, or GIF</p>
+            </div>
+
+            <div className="border-t border-white/5" />
+
+            <SectionLabel text="PROFILE PICTURE" />
             <div className="flex items-center gap-5">
               <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#00ffff]/20 bg-[#0a0b1a] flex-shrink-0">
                 {form.avatar_url ? (
@@ -203,13 +301,22 @@ export default function MyProfilePage() {
               </div>
               <div className="flex-1">
                 <input
-                  type="url"
-                  placeholder="Paste image URL..."
-                  value={form.avatar_url}
-                  onChange={(e) => setForm((p) => ({ ...p, avatar_url: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#00ffff]/15 text-white text-sm font-body placeholder-gray-600 focus:outline-none focus:border-[#00ffff]/40 transition-all"
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
                 />
-                <p className="text-[11px] text-gray-600 mt-1.5 font-body">Direct link to your photo</p>
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#00ffff]/30 text-[#00ffff] text-sm font-medium hover:bg-[#00ffff]/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FaUpload className="text-xs" />
+                  {uploadingAvatar ? "Uploading..." : "Upload Profile Picture"}
+                </button>
+                <p className="text-[11px] text-gray-600 mt-1.5 font-body">Max 5MB. JPEG, PNG, WebP, or GIF</p>
               </div>
             </div>
 
