@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCamera, FaSave, FaTimes, FaPlus, FaCheck, FaUpload } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadProfilePicture, uploadBannerPicture, validateImageFile } from "@/lib/imageUpload";
+import { profileApi } from "@/lib/api";
 
 const LOOKING_FOR_OPTIONS = [
   "Genuine Connection",
@@ -70,25 +70,25 @@ export default function MyProfilePage() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, age, gender, bio, avatar_url, banner_url, location, looking_for, interests")
-        .eq("user_id", user!.id)
-        .maybeSingle();
+      try {
+        const data = await profileApi.getProfile();
 
-      if (data) {
-        setForm({
-          display_name: data.display_name || "",
-          age: data.age || 20,
-          gender: data.gender || "",
-          bio: data.bio || "",
-          avatar_url: data.avatar_url || "",
-          banner_url: data.banner_url || "",
-          location: data.location || "",
-          looking_for: data.looking_for || "",
-          interests: data.interests || [],
-        });
-        setHasProfile(true);
+        if (data) {
+          setForm({
+            display_name: data.display_name || "",
+            age: data.age || 20,
+            gender: data.gender || "",
+            bio: data.bio || "",
+            avatar_url: data.avatar_url || "",
+            banner_url: data.banner_url || "",
+            location: data.location || "",
+            looking_for: data.looking_for || "",
+            interests: data.interests || [],
+          });
+          setHasProfile(true);
+        }
+      } catch (err) {
+        console.error("Failed to load profile:", err);
       }
       setLoading(false);
     }
@@ -171,25 +171,16 @@ export default function MyProfilePage() {
       online_status: true,
     };
 
-    let result;
-    if (hasProfile) {
-      result = await supabase
-        .from("profiles")
-        .update(payload)
-        .eq("user_id", user.id);
-    } else {
-      result = await supabase.from("profiles").insert(payload);
-    }
-
-    setSaving(false);
-
-    if (result.error) {
-      setError(result.error.message);
-    } else {
+    try {
+      await profileApi.saveProfile(payload);
       setHasProfile(true);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save profile");
     }
+
+    setSaving(false);
   };
 
   const toggleInterest = (interest: string) => {

@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaSearch, FaFilter, FaSlidersH } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
-import { supabase } from "@/lib/supabase";
 import type { Profile } from "@/lib/types";
 import { ProfileCard } from "@/components/ProfileCard";
+import { discoverApi } from "@/lib/api";
 
 const interestFilters = ["All", "Tech", "Art", "Music", "Science", "Sports", "Nature"];
 const typeFilters = ["All", "Human", "AI"];
@@ -28,12 +28,11 @@ export default function DiscoverPage() {
 
   useEffect(() => {
     async function fetchProfiles() {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, display_name, age, bio, avatar_url, location, looking_for, interests, compatibility_score, online_status, type");
-
-      if (!error && data) {
+      try {
+        const data = await discoverApi.getProfiles();
         setProfiles(data as Profile[]);
+      } catch (err) {
+        console.error("Failed to fetch profiles:", err);
       }
       setLoading(false);
     }

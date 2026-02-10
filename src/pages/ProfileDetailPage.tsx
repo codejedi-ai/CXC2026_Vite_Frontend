@@ -3,8 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaMapMarkerAlt, FaHeart, FaArrowLeft, FaComment } from "react-icons/fa";
 import { HiSparkles, HiBolt } from "react-icons/hi2";
-import { supabase } from "@/lib/supabase";
 import type { Profile } from "@/lib/types";
+import { discoverApi } from "@/lib/api";
 
 export default function ProfileDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,13 +13,12 @@ export default function ProfileDetailPage() {
 
   useEffect(() => {
     async function fetchProfile() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, age, bio, avatar_url, location, looking_for, interests, compatibility_score, online_status, type")
-        .eq("id", id!)
-        .maybeSingle();
-
-      if (data) setProfile(data as Profile);
+      try {
+        const data = await discoverApi.getProfileById(id!);
+        if (data) setProfile(data as Profile);
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      }
       setLoading(false);
     }
     if (id) fetchProfile();
