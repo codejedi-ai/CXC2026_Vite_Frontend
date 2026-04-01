@@ -12,19 +12,19 @@ def _prefix(profile) -> str:
 def _avatar_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_avatars/{_prefix(p)}_{p.uuid}_{ext[1:].upper()}{ext}"
+    return f"img_avatars/{_prefix(p)}_{p.uuid}_{instance.uuid}_{ext[1:].upper()}{ext}"
 
 
 def _banner_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_banners/{_prefix(p)}_{p.uuid}_{ext[1:].upper()}{ext}"
+    return f"img_banners/{_prefix(p)}_{p.uuid}_{instance.uuid}_{ext[1:].upper()}{ext}"
 
 
 def _personal_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_personal/{_prefix(p)}_{p.uuid}_{ext[1:].upper()}{ext}"
+    return f"img_personal/{_prefix(p)}_{p.uuid}_{instance.uuid}_{ext[1:].upper()}{ext}"
 
 
 class Profile(models.Model):
@@ -34,7 +34,6 @@ class Profile(models.Model):
     age = models.IntegerField(default=20)
     gender = models.CharField(max_length=50, blank=True)
     bio = models.TextField(blank=True)
-    # Active images — point to the chosen image from each bucket table
     active_avatar = models.ForeignKey(
         'BucketAvatarImage', null=True, blank=True,
         on_delete=models.SET_NULL, related_name='+'
@@ -65,10 +64,10 @@ class Profile(models.Model):
 
 
 # ── Bucket image tables ───────────────────────────────────────────────────────
-# One row per uploaded file. Profile → many images (one-to-many per bucket).
 
 class BucketAvatarImage(models.Model):
     """img_avatars bucket — profile pictures."""
+    uuid = models.UUIDField(default=uuid_lib.uuid4, editable=False, unique=True)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='avatar_images')
     file = models.ImageField(upload_to=_avatar_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)
@@ -79,6 +78,7 @@ class BucketAvatarImage(models.Model):
 
 class BucketBannerImage(models.Model):
     """img_banners bucket — profile banner/hero images."""
+    uuid = models.UUIDField(default=uuid_lib.uuid4, editable=False, unique=True)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='banner_images')
     file = models.ImageField(upload_to=_banner_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)
@@ -89,6 +89,7 @@ class BucketBannerImage(models.Model):
 
 class BucketPersonalImage(models.Model):
     """img_personal bucket — additional personal photos."""
+    uuid = models.UUIDField(default=uuid_lib.uuid4, editable=False, unique=True)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='personal_images')
     file = models.ImageField(upload_to=_personal_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)

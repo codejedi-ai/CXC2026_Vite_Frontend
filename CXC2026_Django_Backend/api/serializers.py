@@ -32,18 +32,23 @@ class UserSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     avatar_url = serializers.SerializerMethodField()
+    avatar_urls = serializers.SerializerMethodField()
     banner_url = serializers.SerializerMethodField()
+    banner_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = [
             'id', 'user_id', 'uuid', 'display_name', 'age', 'gender', 'bio',
-            'avatar_url', 'avatar_x', 'avatar_y',
-            'banner_url', 'banner_x', 'banner_y',
+            'avatar_url', 'avatar_urls', 'avatar_x', 'avatar_y',
+            'banner_url', 'banner_urls', 'banner_x', 'banner_y',
             'location', 'looking_for', 'interests',
             'compatibility_score', 'online_status', 'type',
         ]
-        read_only_fields = ['id', 'user_id', 'uuid', 'compatibility_score', 'type', 'avatar_url', 'banner_url']
+        read_only_fields = [
+            'id', 'user_id', 'uuid', 'compatibility_score', 'type',
+            'avatar_url', 'avatar_urls', 'banner_url', 'banner_urls',
+        ]
 
     def _abs_url(self, request, file_field):
         if not file_field:
@@ -58,3 +63,11 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_banner_url(self, obj):
         img = obj.active_banner
         return self._abs_url(self.context.get('request'), img.file if img else None)
+
+    def get_avatar_urls(self, obj):
+        request = self.context.get('request')
+        return [self._abs_url(request, img.file) for img in obj.avatar_images.all()]
+
+    def get_banner_urls(self, obj):
+        request = self.context.get('request')
+        return [self._abs_url(request, img.file) for img in obj.banner_images.all()]

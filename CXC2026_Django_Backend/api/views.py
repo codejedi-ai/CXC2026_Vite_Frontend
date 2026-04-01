@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from django.db.models import Prefetch
 from .models import Profile, BucketAvatarImage, BucketBannerImage, BucketPersonalImage
 from .serializers import RegisterSerializer, UserSerializer, ProfileSerializer
 
@@ -57,7 +58,7 @@ def me(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def profiles_list(request):
-    profiles = Profile.objects.select_related('user', 'active_avatar', 'active_banner').all()
+    profiles = Profile.objects.select_related('user', 'active_avatar', 'active_banner').prefetch_related('avatar_images', 'banner_images').all()
     return Response(ProfileSerializer(profiles, many=True, context=_ctx(request)).data)
 
 
@@ -65,7 +66,7 @@ def profiles_list(request):
 @permission_classes([IsAuthenticated])
 def profile_detail(request, pk):
     try:
-        profile = Profile.objects.select_related('active_avatar', 'active_banner').get(pk=pk)
+        profile = Profile.objects.select_related('active_avatar', 'active_banner').prefetch_related('avatar_images', 'banner_images').get(pk=pk)
     except Profile.DoesNotExist:
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
     return Response(ProfileSerializer(profile, context=_ctx(request)).data)
