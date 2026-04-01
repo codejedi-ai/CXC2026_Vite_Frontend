@@ -5,13 +5,17 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Profile
+from .models import Profile, BucketAvatarImage, BucketBannerImage, BucketPersonalImage
 from .serializers import RegisterSerializer, UserSerializer, ProfileSerializer
 
 
 def _tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {'access': str(refresh.access_token), 'refresh': str(refresh)}
+
+
+def _ctx(request):
+    return {'request': request}
 
 
 @api_view(['POST'])
@@ -53,18 +57,18 @@ def me(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def profiles_list(request):
-    profiles = Profile.objects.select_related('user').all()
-    return Response(ProfileSerializer(profiles, many=True, context={'request': request}).data)
+    profiles = Profile.objects.select_related('user', 'active_avatar', 'active_banner').all()
+    return Response(ProfileSerializer(profiles, many=True, context=_ctx(request)).data)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def profile_detail(request, pk):
     try:
-        profile = Profile.objects.get(pk=pk)
+        profile = Profile.objects.select_related('active_avatar', 'active_banner').get(pk=pk)
     except Profile.DoesNotExist:
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-    return Response(ProfileSerializer(profile, context={'request': request}).data)
+    return Response(ProfileSerializer(profile, context=_ctx(request)).data)
 
 
 @api_view(['GET', 'PUT'])
@@ -73,9 +77,9 @@ def my_profile(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
     if request.method == 'GET':
-        return Response(ProfileSerializer(profile, context={'request': request}).data)
+        return Response(ProfileSerializer(profile, context=_ctx(request)).data)
 
-    serializer = ProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
+    serializer = ProfileSerializer(profile, data=request.data, partial=True, context=_ctx(request))
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     serializer.save()
@@ -85,11 +89,45 @@ def my_profile(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def my_avatar(request):
-    """Upload a profile picture. Send as multipart/form-data with field name 'avatar'."""
+    """Upload a profile picture (multipart/form-data, field: 'avatar').
+    Creates a BucketAvatarImage row and sets it as the active avatar.
+    """
     profile, _ = Profile.objects.get_or_create(user=request.user)
     file = request.FILES.get('avatar')
     if not file:
         return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
-    profile.avatar = file
-    profile.save(update_fields=['avatar'])
-    return Response(ProfileSerializer(profile, context={'request': request}).data)
+    img = BucketAvatarImage.objects.create(profile=profile, file=file)
+    profile.active_avatar = img
+    profile.save(update_fields=['active_avatar'])
+    return Response(ProfileSerializer(profile, context=_ctx(request)).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def my_banner(request):
+    """Upload a banner image (multipart/form-data, field: 'banner').
+    Creates a BucketBannerImage row and sets it as the active banner.
+    """
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    file = request.FILES.get('banner')
+    if not file:
+        return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    img = BucketBannerImage.objects.create(profile=profile, file=file)
+    profile.active_banner = img
+    profile.save(update_fields=['active_banner'])
+    return Response(ProfileSerializer(profile, context=_ctx(request)).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def my_personal_image(request):
+    """Upload a personal photo (multipart/form-data, field: 'image').
+    Creates a BucketPersonalImage row. Does not change any active image.
+    """
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    file = request.FILES.get('image')
+    if not file:
+        return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    img = BucketPersonalImage.objects.create(profile=profile, file=file)
+    return Response({'id': img.id, 'url': request.build_absolute_uri(img.file.url)},
+                    status=status.HTTP_201_CREATED)

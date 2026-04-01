@@ -117,13 +117,13 @@ REST_FRAMEWORK = {
 }
 
 
-# Allow the Vite dev server in development; in production set CORS_ALLOWED_ORIGINS via env var.
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
+# CORS: allow all locally; in production restrict via env var.
+if IS_HEROKU_APP:
     CORS_ALLOWED_ORIGINS = os.environ.get(
-        "CORS_ALLOWED_ORIGINS", "http://localhost:5173"
+        "CORS_ALLOWED_ORIGINS", ""
     ).split(",")
+else:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 
 LOGGING = {
