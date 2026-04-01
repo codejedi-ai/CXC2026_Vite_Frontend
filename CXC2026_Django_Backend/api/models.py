@@ -12,19 +12,19 @@ def _prefix(profile) -> str:
 def _avatar_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_avatars/{_prefix(p)}_{p.uuid}{ext}"
+    return f"img_avatars/{_prefix(p)}_{p.uuid}_{ext[1:].upper()}{ext}"
 
 
 def _banner_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_banners/{_prefix(p)}_{p.uuid}{ext}"
+    return f"img_banners/{_prefix(p)}_{p.uuid}_{ext[1:].upper()}{ext}"
 
 
 def _personal_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_personal/{_prefix(p)}_{p.uuid}{ext}"
+    return f"img_personal/{_prefix(p)}_{p.uuid}_{ext[1:].upper()}{ext}"
 
 
 class Profile(models.Model):
