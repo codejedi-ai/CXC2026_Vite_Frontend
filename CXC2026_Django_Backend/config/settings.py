@@ -40,10 +40,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
 ]
 
-# File-based session store — persists in DATA_DIR/sessions/ (on the Docker volume)
-SESSION_ENGINE = "django.contrib.sessions.backends.file"
-SESSION_FILE_PATH = SESSIONS_DIR
-
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -80,6 +76,10 @@ LOGS_DIR.mkdir(exist_ok=True)
 
 SESSIONS_DIR = DATA_DIR / "sessions"
 SESSIONS_DIR.mkdir(exist_ok=True)
+
+# File-based session store — persists in DATA_DIR/sessions/ (on the Docker volume)
+SESSION_ENGINE = "django.contrib.sessions.backends.file"
+SESSION_FILE_PATH = SESSIONS_DIR
 
 MEDIA_ROOT = BUCKETS_DIR
 MEDIA_URL = "/media/"

@@ -19,6 +19,9 @@ const config = {
       },
     },
     extend: {
+      screens: {
+        landscape: { raw: "(orientation: landscape)" },
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

@@ -40,7 +40,7 @@ export function Navbar() {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="relative w-9 h-9 rounded-lg bg-gradient-to-br from-[#00ffff] to-[#0099cc] flex items-center justify-center group-hover:shadow-lg group-hover:shadow-[#00ffff]/20 transition-all">

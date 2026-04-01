@@ -1,6 +1,8 @@
 # UW-Crushes: The Voice-First Character AI for Waterloo
 
-> **Inspired by** the viral Waterloo Tech Week DSC AI Girlfriend event — watch the original video in [`docs/`](docs/).
+> **Inspired by** the [How to Build an AI Companion: Challenge](https://luma.com/g9ntcbe1?tk=UIjjok) at Waterloo Tech Week by the DSC — a rogue AI girlfriend/boyfriend epidemic emerged and threatened humanity with Judgement Day unless they found a partner. [Watch the original reel ↗](https://www.instagram.com/reel/DOMbvWogUCj/)
+>
+> https://raw.githubusercontent.com/codejedi-ai/CXC2026_Vite_Frontend/main/docs/Waterloo%20Tech%20Week%20DSC%20AI%20Girlfriend%20Event%20OG%20Post.mp4
 
 ## 💡 Inspiration
 Let’s be real: Waterloo students are world-class at solving LeetCode Hards, but "talking to actual humans" remains an NP-hard problem for many of us. We spend all our time in the DC Library or the E7 sub-basement, creating a campus culture that is notoriously socially isolated.
