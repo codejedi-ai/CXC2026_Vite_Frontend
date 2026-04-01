@@ -51,11 +51,16 @@ export default function ProfileDetailPage() {
   return (
     <div className="min-h-screen pb-20">
       <div className="relative h-[50vh] sm:h-[60vh] overflow-hidden">
-        <img
-          src={profile.avatar_url}
-          alt={profile.display_name}
-          className="w-full h-full object-cover"
-        />
+        {profile.banner_url ? (
+          <img
+            src={profile.banner_url}
+            alt={profile.display_name}
+            className="w-full h-full object-cover"
+            style={{ objectPosition: `${profile.banner_x ?? 50}% ${profile.banner_y ?? 50}%` }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#0a0b1a] to-[#1a0b2e]" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050714] via-[#050714]/60 to-transparent" />
 
         <motion.div
