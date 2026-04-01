@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { FaHeart, FaArrowRight } from "react-icons/fa";
 import { HiSparkles, HiBolt, HiSignal, HiShieldCheck } from "react-icons/hi2";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import type { Profile } from "@/lib/types";
 import { ProfileCard } from "@/components/ProfileCard";
 
@@ -37,13 +37,8 @@ export default function LandingPage() {
 
   useEffect(() => {
     async function fetchFeatured() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, age, bio, avatar_url, location, looking_for, interests, compatibility_score, online_status, type")
-        .order("compatibility_score", { ascending: false })
-        .limit(3);
-
-      if (data) setFeaturedProfiles(data as Profile[]);
+      const data = await api.getProfiles();
+      setFeaturedProfiles((data as Profile[]).slice(0, 3));
     }
     fetchFeatured();
   }, []);

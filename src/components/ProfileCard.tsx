@@ -3,8 +3,6 @@ import { motion } from "framer-motion";
 import { FaMapMarkerAlt, FaHeart } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
 import type { Profile } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
-
 interface ProfileCardProps {
   profile: Profile;
 }
@@ -12,20 +10,8 @@ interface ProfileCardProps {
 export function ProfileCard({ profile }: ProfileCardProps) {
   const navigate = useNavigate();
 
-  const handleClick = async (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-
-    if (!profile.online_status) {
-      try {
-        await supabase
-          .from("sessions")
-          .delete()
-          .eq("entity_uuid", profile.id);
-      } catch (error) {
-        console.error("Session cleanup error:", error);
-      }
-    }
-
     navigate(`/profile/${profile.id}`);
   };
 
