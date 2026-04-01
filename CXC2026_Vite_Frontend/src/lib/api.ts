@@ -126,6 +126,12 @@ export const api = {
     return { data: json, error: null };
   },
 
+  async getMyAvatars() {
+    const res = await request('/profiles/me/avatar/');
+    if (!res.ok) return [];
+    return res.json() as Promise<{ id: number; url: string; active: boolean }[]>;
+  },
+
   async uploadAvatar(file: File) {
     const token = getToken('access_token');
     const body = new FormData();
@@ -137,6 +143,75 @@ export const api = {
     });
     const json = await res.json();
     if (!res.ok) return { data: null, error: (json.detail as string) ?? 'Upload failed' };
-    return { data: json, error: null };
+    return { data: json as { id: number; url: string; active: boolean }[], error: null };
+  },
+
+  async activateAvatar(id: number) {
+    const res = await request(`/profiles/me/avatar/${id}/`, { method: 'POST' });
+    if (!res.ok) return null;
+    return res.json() as Promise<{ id: number; url: string; active: boolean }[]>;
+  },
+
+  async deleteAvatar(id: number) {
+    const res = await request(`/profiles/me/avatar/${id}/`, { method: 'DELETE' });
+    if (!res.ok) return null;
+    return res.json() as Promise<{ id: number; url: string; active: boolean }[]>;
+  },
+
+  async getMyBanners() {
+    const res = await request('/profiles/me/banner/');
+    if (!res.ok) return [];
+    return res.json() as Promise<{ id: number; url: string; active: boolean }[]>;
+  },
+
+  async uploadBanner(file: File) {
+    const token = getToken('access_token');
+    const body = new FormData();
+    body.append('banner', file);
+    const res = await fetch(`${BASE_URL}/profiles/me/banner/`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body,
+    });
+    const json = await res.json();
+    if (!res.ok) return { data: null, error: (json.detail as string) ?? 'Upload failed' };
+    return { data: json as { id: number; url: string; active: boolean }[], error: null };
+  },
+
+  async activateBanner(id: number) {
+    const res = await request(`/profiles/me/banner/${id}/`, { method: 'POST' });
+    if (!res.ok) return null;
+    return res.json() as Promise<{ id: number; url: string; active: boolean }[]>;
+  },
+
+  async deleteBanner(id: number) {
+    const res = await request(`/profiles/me/banner/${id}/`, { method: 'DELETE' });
+    if (!res.ok) return null;
+    return res.json() as Promise<{ id: number; url: string; active: boolean }[]>;
+  },
+
+  async getMyPersonalImages() {
+    const res = await request('/profiles/me/images/');
+    if (!res.ok) return [];
+    return res.json() as Promise<{ id: number; url: string }[]>;
+  },
+
+  async uploadPersonalImage(file: File) {
+    const token = getToken('access_token');
+    const body = new FormData();
+    body.append('image', file);
+    const res = await fetch(`${BASE_URL}/profiles/me/images/`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body,
+    });
+    const json = await res.json();
+    if (!res.ok) return { data: null, error: (json.detail as string) ?? 'Upload failed' };
+    return { data: json as { id: number; url: string }, error: null };
+  },
+
+  async deletePersonalImage(id: number) {
+    const res = await request(`/profiles/me/images/${id}/`, { method: 'DELETE' });
+    return res.ok;
   },
 };

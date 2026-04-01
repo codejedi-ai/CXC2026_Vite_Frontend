@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaCamera, FaSave, FaTimes, FaPlus, FaCheck } from "react-icons/fa";
+import { FaCamera, FaSave, FaTimes, FaPlus, FaCheck, FaImage, FaStar, FaRegStar, FaTrash } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { ImageSlideshow } from "@/components/ImageSlideshow";
+
+type ImageEntry = { id: number; url: string; active?: boolean };
 
 const LOOKING_FOR_OPTIONS = [
   "Genuine Connection",
@@ -52,11 +55,25 @@ export default function MyProfilePage() {
   const { user } = useAuth();
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM);
   const [profileUuid, setProfileUuid] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Avatar state
+  const [avatars, setAvatars] = useState<ImageEntry[]>([]);
   const [avatarX, setAvatarX] = useState(50);
   const [avatarY, setAvatarY] = useState(50);
-  const [uploading, setUploading] = useState(false);
-  const dragRef = useRef<{ startX: number; startY: number; startAx: number; startAy: number } | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarDragRef = useRef<{ startX: number; startY: number; startAx: number; startAy: number } | null>(null);
+
+  // Banner state
+  const [banners, setBanners] = useState<ImageEntry[]>([]);
+  const [bannerX, setBannerX] = useState(50);
+  const [bannerY, setBannerY] = useState(50);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const bannerDragRef = useRef<{ startX: number; startY: number; startBx: number; startBy: number } | null>(null);
+
+  // Personal images state
+  const [personalImages, setPersonalImages] = useState<ImageEntry[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -64,10 +81,18 @@ export default function MyProfilePage() {
   const [hasProfile, setHasProfile] = useState(false);
   const [newInterest, setNewInterest] = useState("");
 
+  const activeAvatar = avatars.find((a) => a.active) ?? avatars[0] ?? null;
+  const bannerUrls = banners.map((b) => b.url);
+
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const data = await api.getMyProfile();
+      const [data, avatarList, bannerList, imageList] = await Promise.all([
+        api.getMyProfile(),
+        api.getMyAvatars(),
+        api.getMyBanners(),
+        api.getMyPersonalImages(),
+      ]);
       if (data && data.display_name !== undefined) {
         setForm({
           display_name: data.display_name || "",
@@ -79,11 +104,15 @@ export default function MyProfilePage() {
           interests: data.interests || [],
         });
         setProfileUuid(data.uuid || null);
-        setAvatarUrl(data.avatar_url || null);
         setAvatarX(data.avatar_x ?? 50);
         setAvatarY(data.avatar_y ?? 50);
+        setBannerX(data.banner_x ?? 50);
+        setBannerY(data.banner_y ?? 50);
         setHasProfile(true);
       }
+      setAvatars(avatarList);
+      setBanners(bannerList);
+      setPersonalImages(imageList);
       setLoading(false);
     }
     load();
@@ -92,14 +121,11 @@ export default function MyProfilePage() {
   const handleSave = async () => {
     if (!user) return;
     setError(null);
-
     if (!form.display_name.trim()) {
       setError("Display name is required");
       return;
     }
-
     setSaving(true);
-
     const payload = {
       display_name: form.display_name.trim(),
       age: form.age,
@@ -110,11 +136,11 @@ export default function MyProfilePage() {
       interests: form.interests,
       avatar_x: avatarX,
       avatar_y: avatarY,
+      banner_x: bannerX,
+      banner_y: bannerY,
     };
-
     const result = await api.saveMyProfile(payload);
     setSaving(false);
-
     if (result.error) {
       setError(result.error);
     } else {
@@ -173,26 +199,28 @@ export default function MyProfilePage() {
           transition={{ delay: 0.15, duration: 0.5 }}
           className="space-y-6"
         >
-          <div className="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
+          {/* ── AVATAR ──────────────────────────────────────────────── */}
+          <div className="glass-panel rounded-2xl p-6 sm:p-8 space-y-5">
             <SectionLabel text="AVATAR" />
+
             <div className="flex items-start gap-5">
-              {/* Circle preview with drag-to-reposition */}
+              {/* Active avatar circle with drag */}
               <div className="flex flex-col items-center gap-2 flex-shrink-0">
                 <div
                   className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-[#00ffff]/30 bg-[#0a0b1a] select-none"
-                  style={{ cursor: avatarUrl ? "grab" : "default" }}
-                  onMouseDown={avatarUrl ? (e) => {
+                  style={{ cursor: activeAvatar ? "grab" : "default" }}
+                  onMouseDown={activeAvatar ? (e) => {
                     e.preventDefault();
-                    dragRef.current = { startX: e.clientX, startY: e.clientY, startAx: avatarX, startAy: avatarY };
+                    avatarDragRef.current = { startX: e.clientX, startY: e.clientY, startAx: avatarX, startAy: avatarY };
                     const onMove = (mv: MouseEvent) => {
-                      if (!dragRef.current) return;
-                      const dx = (mv.clientX - dragRef.current.startX) / 2;
-                      const dy = (mv.clientY - dragRef.current.startY) / 2;
-                      setAvatarX(Math.min(100, Math.max(0, dragRef.current.startAx - dx)));
-                      setAvatarY(Math.min(100, Math.max(0, dragRef.current.startAy - dy)));
+                      if (!avatarDragRef.current) return;
+                      const dx = (mv.clientX - avatarDragRef.current.startX) / 2;
+                      const dy = (mv.clientY - avatarDragRef.current.startY) / 2;
+                      setAvatarX(Math.min(100, Math.max(0, avatarDragRef.current.startAx - dx)));
+                      setAvatarY(Math.min(100, Math.max(0, avatarDragRef.current.startAy - dy)));
                     };
                     const onUp = () => {
-                      dragRef.current = null;
+                      avatarDragRef.current = null;
                       window.removeEventListener("mousemove", onMove);
                       window.removeEventListener("mouseup", onUp);
                     };
@@ -200,9 +228,9 @@ export default function MyProfilePage() {
                     window.addEventListener("mouseup", onUp);
                   } : undefined}
                 >
-                  {avatarUrl ? (
+                  {activeAvatar ? (
                     <img
-                      src={avatarUrl}
+                      src={activeAvatar.url}
                       alt="Avatar"
                       className="w-full h-full object-cover pointer-events-none"
                       style={{ objectPosition: `${avatarX}% ${avatarY}%` }}
@@ -213,7 +241,7 @@ export default function MyProfilePage() {
                     </div>
                   )}
                 </div>
-                {avatarUrl && (
+                {activeAvatar && (
                   <p className="text-[10px] text-gray-600 font-body">drag to reposition</p>
                 )}
               </div>
@@ -221,20 +249,20 @@ export default function MyProfilePage() {
               <div className="flex-1">
                 <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#00ffff]/15 text-[#00ffff] text-sm font-body cursor-pointer hover:border-[#00ffff]/40 transition-all">
                   <FaCamera className="text-xs" />
-                  {uploading ? "UPLOADING..." : avatarUrl ? "CHANGE PHOTO" : "UPLOAD PHOTO"}
+                  {uploadingAvatar ? "UPLOADING..." : avatars.length ? "ADD AVATAR PHOTO" : "UPLOAD AVATAR"}
                   <input
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    disabled={uploading}
+                    disabled={uploadingAvatar}
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      setUploading(true);
+                      setUploadingAvatar(true);
                       const result = await api.uploadAvatar(file);
-                      setUploading(false);
+                      setUploadingAvatar(false);
                       if (result.data) {
-                        setAvatarUrl(result.data.avatar_url ?? null);
+                        setAvatars(result.data);
                         setAvatarX(50);
                         setAvatarY(50);
                       } else {
@@ -249,8 +277,162 @@ export default function MyProfilePage() {
               </div>
             </div>
 
-            <div className="border-t border-white/5" />
+            {/* Avatar image grid */}
+            {avatars.length > 0 && (
+              <ImageGrid
+                images={avatars}
+                onActivate={async (id) => {
+                  const updated = await api.activateAvatar(id);
+                  if (updated) setAvatars(updated);
+                }}
+                onDelete={async (id) => {
+                  const updated = await api.deleteAvatar(id);
+                  if (updated) setAvatars(updated);
+                }}
+                showActivate
+              />
+            )}
+          </div>
 
+          {/* ── BANNER ──────────────────────────────────────────────── */}
+          <div className="glass-panel rounded-2xl p-6 sm:p-8 space-y-5">
+            <SectionLabel text="BANNER" />
+
+            {/* Banner slideshow preview */}
+            <div
+              className="relative w-full h-36 rounded-xl overflow-hidden border border-[#00ffff]/15 bg-[#0a0b1a] select-none"
+              style={{ cursor: bannerUrls.length ? "grab" : "default" }}
+              onMouseDown={bannerUrls.length ? (e) => {
+                e.preventDefault();
+                bannerDragRef.current = { startX: e.clientX, startY: e.clientY, startBx: bannerX, startBy: bannerY };
+                const onMove = (mv: MouseEvent) => {
+                  if (!bannerDragRef.current) return;
+                  const dx = (mv.clientX - bannerDragRef.current.startX) / 3;
+                  const dy = (mv.clientY - bannerDragRef.current.startY) / 3;
+                  setBannerX(Math.min(100, Math.max(0, bannerDragRef.current.startBx - dx)));
+                  setBannerY(Math.min(100, Math.max(0, bannerDragRef.current.startBy - dy)));
+                };
+                const onUp = () => {
+                  bannerDragRef.current = null;
+                  window.removeEventListener("mousemove", onMove);
+                  window.removeEventListener("mouseup", onUp);
+                };
+                window.addEventListener("mousemove", onMove);
+                window.addEventListener("mouseup", onUp);
+              } : undefined}
+            >
+              {bannerUrls.length ? (
+                <ImageSlideshow
+                  urls={bannerUrls}
+                  objectX={bannerX}
+                  objectY={bannerY}
+                  alt="Banner"
+                  className="w-full h-full object-cover pointer-events-none"
+                  interval={5000}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <FaImage className="text-gray-700 text-2xl" />
+                </div>
+              )}
+              {bannerUrls.length > 1 && (
+                <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/60 text-[10px] text-gray-400 font-body">
+                  {bannerUrls.length} photos · slideshow
+                </div>
+              )}
+            </div>
+            {bannerUrls.length > 0 && (
+              <p className="text-[10px] text-gray-600 font-body -mt-2">drag preview to reposition · save profile to apply</p>
+            )}
+
+            <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#00ffff]/15 text-[#00ffff] text-sm font-body cursor-pointer hover:border-[#00ffff]/40 transition-all">
+              <FaCamera className="text-xs" />
+              {uploadingBanner ? "UPLOADING..." : banners.length ? "ADD BANNER PHOTO" : "UPLOAD BANNER"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingBanner}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploadingBanner(true);
+                  const result = await api.uploadBanner(file);
+                  setUploadingBanner(false);
+                  if (result.data) {
+                    setBanners(result.data);
+                    setBannerX(50);
+                    setBannerY(50);
+                  } else {
+                    setError(result.error ?? "Upload failed");
+                  }
+                }}
+              />
+            </label>
+
+            {/* Banner image grid */}
+            {banners.length > 0 && (
+              <ImageGrid
+                images={banners}
+                onActivate={async (id) => {
+                  const updated = await api.activateBanner(id);
+                  if (updated) setBanners(updated);
+                }}
+                onDelete={async (id) => {
+                  const updated = await api.deleteBanner(id);
+                  if (updated) setBanners(updated);
+                }}
+                showActivate
+              />
+            )}
+          </div>
+
+          {/* ── MY PHOTOS ───────────────────────────────────────────── */}
+          <div className="glass-panel rounded-2xl p-6 sm:p-8 space-y-5">
+            <SectionLabel text="MY PHOTOS" />
+            <p className="text-[11px] text-gray-500 font-body -mt-2">Personal photos stored in your gallery</p>
+
+            <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#ff0080]/15 text-[#ff0080] text-sm font-body cursor-pointer hover:border-[#ff0080]/40 transition-all">
+              <FaPlus className="text-xs" />
+              {uploadingImage ? "UPLOADING..." : "ADD PHOTO"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingImage}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploadingImage(true);
+                  const result = await api.uploadPersonalImage(file);
+                  setUploadingImage(false);
+                  if (result.data) {
+                    setPersonalImages((prev) => [result.data!, ...prev]);
+                  } else {
+                    setError(result.error ?? "Upload failed");
+                  }
+                }}
+              />
+            </label>
+
+            {personalImages.length > 0 ? (
+              <ImageGrid
+                images={personalImages}
+                onDelete={async (id) => {
+                  const ok = await api.deletePersonalImage(id);
+                  if (ok) setPersonalImages((prev) => prev.filter((i) => i.id !== id));
+                }}
+                showActivate={false}
+              />
+            ) : (
+              <div className="text-center py-6 text-gray-600 font-body text-sm">
+                No photos yet
+              </div>
+            )}
+          </div>
+
+          {/* ── PROFILE INFO ────────────────────────────────────────── */}
+          <div className="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
             <SectionLabel text="BASIC INFO" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FieldGroup label="DISPLAY NAME">
@@ -432,6 +614,56 @@ export default function MyProfilePage() {
           </motion.button>
         </motion.div>
       </div>
+    </div>
+  );
+}
+
+// ── Shared image grid with activate/delete controls ────────────────────────────
+
+interface ImageGridProps {
+  images: ImageEntry[];
+  onActivate?: (id: number) => void;
+  onDelete: (id: number) => void;
+  showActivate: boolean;
+}
+
+function ImageGrid({ images, onActivate, onDelete, showActivate }: ImageGridProps) {
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+      {images.map((img) => (
+        <div key={img.id} className="relative group aspect-square rounded-lg overflow-hidden border border-white/10">
+          <img
+            src={img.url}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          {/* Active badge */}
+          {showActivate && img.active && (
+            <div className="absolute top-1 left-1 w-5 h-5 rounded-full bg-[#00ffff] flex items-center justify-center">
+              <FaStar className="text-black text-[8px]" />
+            </div>
+          )}
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            {showActivate && !img.active && onActivate && (
+              <button
+                title="Set as active"
+                onClick={() => onActivate(img.id)}
+                className="w-7 h-7 rounded-full bg-[#00ffff]/20 border border-[#00ffff]/50 flex items-center justify-center hover:bg-[#00ffff]/40 transition-colors"
+              >
+                <FaRegStar className="text-[#00ffff] text-[10px]" />
+              </button>
+            )}
+            <button
+              title="Delete"
+              onClick={() => onDelete(img.id)}
+              className="w-7 h-7 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center hover:bg-red-500/40 transition-colors"
+            >
+              <FaTrash className="text-red-400 text-[10px]" />
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

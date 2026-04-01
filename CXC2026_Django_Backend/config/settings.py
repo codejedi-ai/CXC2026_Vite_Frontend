@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "daphne",                         # must be first — overrides runserver with ASGI
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "django.contrib.sessions",
     "rest_framework",
     "corsheaders",
     "channels",
@@ -35,8 +36,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
+
+# File-based session store — persists in DATA_DIR/sessions/ (on the Docker volume)
+SESSION_ENGINE = "django.contrib.sessions.backends.file"
+SESSION_FILE_PATH = SESSIONS_DIR
 
 ROOT_URLCONF = "config.urls"
 
@@ -62,15 +68,18 @@ CHANNEL_LAYERS = {
     }
 }
 
-# Runtime data directory (gitignored) — use for uploads, caches, agent artefacts
-DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
+# Runtime data directory — override via DATA_DIR env var (e.g. for Docker volume mounts)
+DATA_DIR = Path(os.environ.get("DATA_DIR", str(BASE_DIR / "data")))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 BUCKETS_DIR = DATA_DIR / "buckets"
 BUCKETS_DIR.mkdir(exist_ok=True)
 
 LOGS_DIR = DATA_DIR / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
+
+SESSIONS_DIR = DATA_DIR / "sessions"
+SESSIONS_DIR.mkdir(exist_ok=True)
 
 MEDIA_ROOT = BUCKETS_DIR
 MEDIA_URL = "/media/"

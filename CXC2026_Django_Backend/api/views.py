@@ -87,48 +87,144 @@ def my_profile(request):
     return Response(serializer.data)
 
 
-@api_view(['POST'])
+def _avatar_list(profile, request):
+    return [
+        {
+            'id': img.id,
+            'url': request.build_absolute_uri(img.file.url),
+            'active': profile.active_avatar_id == img.id,
+        }
+        for img in profile.avatar_images.all().order_by('-uploaded_at')
+    ]
+
+
+def _banner_list(profile, request):
+    return [
+        {
+            'id': img.id,
+            'url': request.build_absolute_uri(img.file.url),
+            'active': profile.active_banner_id == img.id,
+        }
+        for img in profile.banner_images.all().order_by('-uploaded_at')
+    ]
+
+
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def my_avatar(request):
-    """Upload a profile picture (multipart/form-data, field: 'avatar').
-    Creates a BucketAvatarImage row and sets it as the active avatar.
-    """
+    """GET: list all avatar images. POST: upload new (field: 'avatar')."""
     profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'GET':
+        return Response(_avatar_list(profile, request))
+
     file = request.FILES.get('avatar')
     if not file:
         return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
     img = BucketAvatarImage.objects.create(profile=profile, file=file)
     profile.active_avatar = img
     profile.save(update_fields=['active_avatar'])
-    return Response(ProfileSerializer(profile, context=_ctx(request)).data)
+    profile.refresh_from_db()
+    return Response(_avatar_list(profile, request))
 
 
-@api_view(['POST'])
+@api_view(['DELETE', 'POST'])
+@permission_classes([IsAuthenticated])
+def my_avatar_detail(request, pk):
+    """DELETE: remove avatar image. POST (activate): set as active avatar."""
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    try:
+        img = BucketAvatarImage.objects.get(pk=pk, profile=profile)
+    except BucketAvatarImage.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        if profile.active_avatar_id == img.id:
+            profile.active_avatar = None
+            profile.save(update_fields=['active_avatar'])
+        img.file.delete(save=False)
+        img.delete()
+    else:  # POST = activate
+        profile.active_avatar = img
+        profile.save(update_fields=['active_avatar'])
+
+    profile.refresh_from_db()
+    return Response(_avatar_list(profile, request))
+
+
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def my_banner(request):
-    """Upload a banner image (multipart/form-data, field: 'banner').
-    Creates a BucketBannerImage row and sets it as the active banner.
-    """
+    """GET: list all banner images. POST: upload new (field: 'banner')."""
     profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'GET':
+        return Response(_banner_list(profile, request))
+
     file = request.FILES.get('banner')
     if not file:
         return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
     img = BucketBannerImage.objects.create(profile=profile, file=file)
     profile.active_banner = img
     profile.save(update_fields=['active_banner'])
-    return Response(ProfileSerializer(profile, context=_ctx(request)).data)
+    profile.refresh_from_db()
+    return Response(_banner_list(profile, request))
 
 
-@api_view(['POST'])
+@api_view(['DELETE', 'POST'])
+@permission_classes([IsAuthenticated])
+def my_banner_detail(request, pk):
+    """DELETE: remove banner image. POST (activate): set as active banner."""
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    try:
+        img = BucketBannerImage.objects.get(pk=pk, profile=profile)
+    except BucketBannerImage.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        if profile.active_banner_id == img.id:
+            profile.active_banner = None
+            profile.save(update_fields=['active_banner'])
+        img.file.delete(save=False)
+        img.delete()
+    else:  # POST = activate
+        profile.active_banner = img
+        profile.save(update_fields=['active_banner'])
+
+    profile.refresh_from_db()
+    return Response(_banner_list(profile, request))
+
+
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def my_personal_image(request):
-    """Upload a personal photo (multipart/form-data, field: 'image').
-    Creates a BucketPersonalImage row. Does not change any active image.
-    """
+    """GET: list personal photos. POST: upload one (field: 'image')."""
     profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'GET':
+        imgs = profile.personal_images.all().order_by('-uploaded_at')
+        return Response([
+            {'id': img.id, 'url': request.build_absolute_uri(img.file.url)}
+            for img in imgs
+        ])
+
     file = request.FILES.get('image')
     if not file:
         return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
     img = BucketPersonalImage.objects.create(profile=profile, file=file)
     return Response({'id': img.id, 'url': request.build_absolute_uri(img.file.url)},
                     status=status.HTTP_201_CREATED)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def my_personal_image_detail(request, pk):
+    """DELETE a personal image."""
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    try:
+        img = BucketPersonalImage.objects.get(pk=pk, profile=profile)
+    except BucketPersonalImage.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+    img.file.delete(save=False)
+    img.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
