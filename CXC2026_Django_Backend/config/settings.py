@@ -68,6 +68,7 @@ DATA_DIR.mkdir(exist_ok=True)
 
 BUCKETS_DIR = DATA_DIR / "buckets"
 BUCKETS_DIR.mkdir(exist_ok=True)
+(BUCKETS_DIR / "logs").mkdir(exist_ok=True)
 
 MEDIA_ROOT = BUCKETS_DIR
 MEDIA_URL = "/media/"
@@ -129,18 +130,31 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
+        "verbose": {
+            "format": "[{asctime}] [{levelname}] {name}: {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
         "simple": {"format": "[{levelname}] {message}", "style": "{"},
     },
     "handlers": {
         "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BUCKETS_DIR / "logs" / "django.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
     },
-    "root": {"handlers": ["console"], "level": "INFO"},
+    "root": {"handlers": ["console", "file"], "level": "INFO"},
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,
         },
-        "django.request": {"level": "ERROR"},
+        "django.request": {"level": "WARNING"},
     },
 }
