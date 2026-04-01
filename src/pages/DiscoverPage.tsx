@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaSearch, FaFilter, FaSlidersH } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import type { Profile } from "@/lib/types";
 import { ProfileCard } from "@/components/ProfileCard";
 
@@ -28,13 +28,8 @@ export default function DiscoverPage() {
 
   useEffect(() => {
     async function fetchProfiles() {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, display_name, age, bio, avatar_url, location, looking_for, interests, compatibility_score, online_status, type");
-
-      if (!error && data) {
-        setProfiles(data as Profile[]);
-      }
+      const data = await api.getProfiles();
+      setProfiles(data as Profile[]);
       setLoading(false);
     }
     fetchProfiles();

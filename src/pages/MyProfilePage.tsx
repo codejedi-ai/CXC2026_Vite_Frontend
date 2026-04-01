@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCamera, FaSave, FaTimes, FaPlus, FaCheck } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 const LOOKING_FOR_OPTIONS = [
@@ -63,13 +63,8 @@ export default function MyProfilePage() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, age, gender, bio, avatar_url, location, looking_for, interests")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
-      if (data) {
+      const data = await api.getMyProfile();
+      if (data && data.display_name !== undefined) {
         setForm({
           display_name: data.display_name || "",
           age: data.age || 20,
@@ -99,7 +94,6 @@ export default function MyProfilePage() {
     setSaving(true);
 
     const payload = {
-      user_id: user.id,
       display_name: form.display_name.trim(),
       age: form.age,
       gender: form.gender,
@@ -108,24 +102,13 @@ export default function MyProfilePage() {
       location: form.location.trim(),
       looking_for: form.looking_for,
       interests: form.interests,
-      type: "human" as const,
-      online_status: true,
     };
 
-    let result;
-    if (hasProfile) {
-      result = await supabase
-        .from("profiles")
-        .update(payload)
-        .eq("user_id", user.id);
-    } else {
-      result = await supabase.from("profiles").insert(payload);
-    }
-
+    const result = await api.saveMyProfile(payload);
     setSaving(false);
 
     if (result.error) {
-      setError(result.error.message);
+      setError(result.error);
     } else {
       setHasProfile(true);
       setSaved(true);

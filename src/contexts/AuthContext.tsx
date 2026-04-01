@@ -1,10 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
+
+export interface DjangoUser {
+  id: number;
+  email: string;
+}
 
 interface AuthState {
-  user: User | null;
-  session: Session | null;
+  user: DjangoUser | null;
   loading: boolean;
 }
 
@@ -17,45 +20,41 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    session: null,
-    loading: true,
-  });
+  const [state, setState] = useState<AuthState>({ user: null, loading: true });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState({ user: session?.user ?? null, session, loading: false });
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState((prev) => ({
-        ...prev,
-        user: session?.user ?? null,
-        session,
-        loading: false,
-      }));
-    });
-
-    return () => subscription.unsubscribe();
+    if (!localStorage.getItem('access_token')) {
+      setState({ user: null, loading: false });
+      return;
+    }
+    api.me().then((user) => setState({ user: user ?? null, loading: false }));
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
+    const { ok, data } = await api.register(email, password);
+    if (!ok) {
+      const err = data.email?.[0] || data.password?.[0] || data.detail || 'Registration failed.';
+      return { error: err };
+    }
+    localStorage.setItem('access_token', data.access);
+    localStorage.setItem('refresh_token', data.refresh);
+    setState({ user: data.user, loading: false });
     return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
+    const { ok, data } = await api.login(email, password);
+    if (!ok) return { error: data.detail || 'Invalid email or password.' };
+    localStorage.setItem('access_token', data.access);
+    localStorage.setItem('refresh_token', data.refresh);
+    setState({ user: data.user, loading: false });
     return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    setState({ user: null, loading: false });
   };
 
   return (

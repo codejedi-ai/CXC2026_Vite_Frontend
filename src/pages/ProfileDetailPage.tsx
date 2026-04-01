@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaMapMarkerAlt, FaHeart, FaArrowLeft, FaComment } from "react-icons/fa";
 import { HiSparkles, HiBolt } from "react-icons/hi2";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import type { Profile } from "@/lib/types";
 
 export default function ProfileDetailPage() {
@@ -13,12 +13,7 @@ export default function ProfileDetailPage() {
 
   useEffect(() => {
     async function fetchProfile() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, age, bio, avatar_url, location, looking_for, interests, compatibility_score, online_status, type")
-        .eq("id", id!)
-        .maybeSingle();
-
+      const data = await api.getProfile(id!);
       if (data) setProfile(data as Profile);
       setLoading(false);
     }

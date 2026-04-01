@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { HiSignal } from "react-icons/hi2";
 import { useAudioRoom, type RoomStatus } from "@/hooks/useAudioRoom";
+import { fetchLiveKitConnection, DEFAULT_ROOM } from "@/lib/livekit";
 
 interface VoiceChatModalProps {
   open: boolean;
@@ -36,10 +37,15 @@ const STATUS_CONFIG: Record<
   },
 };
 
+const TOKEN_API_URL = import.meta.env.VITE_LIVEKIT_TOKEN_API ?? "";
+
 export function VoiceChatModal({ open, onClose }: VoiceChatModalProps) {
   const [serverUrl, setServerUrl] = useState("");
   const [token, setToken] = useState("");
-  const { status, logs, micEnabled, connect, disconnect, toggleMic } =
+  const [roomName, setRoomName] = useState(DEFAULT_ROOM);
+  const [quickConnectError, setQuickConnectError] = useState<string | null>(null);
+  const [quickConnecting, setQuickConnecting] = useState(false);
+  const { status, logs, micEnabled, connect, disconnect, toggleMic, addLog } =
     useAudioRoom();
   const logEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +56,33 @@ export function VoiceChatModal({ open, onClose }: VoiceChatModalProps) {
   const handleConnect = () => {
     if (!serverUrl.trim() || !token.trim()) return;
     connect(serverUrl.trim(), token.trim());
+  };
+
+  const handleQuickConnect = async () => {
+    if (!TOKEN_API_URL.trim()) {
+      setQuickConnectError("Set VITE_LIVEKIT_TOKEN_API in .env (e.g. http://localhost:8765)");
+      return;
+    }
+    setQuickConnectError(null);
+    setQuickConnecting(true);
+    try {
+      addLog("Fetching credentials from backend...", "info");
+      const { token: jwt, url } = await fetchLiveKitConnection(
+        TOKEN_API_URL,
+        roomName.trim() || DEFAULT_ROOM,
+        "user"
+      );
+      setServerUrl(url);
+      setToken(jwt);
+      addLog("Token received, connecting to LiveKit...", "success");
+      connect(url, jwt);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setQuickConnectError(msg);
+      addLog(`Quick connect failed: ${msg}`, "error");
+    } finally {
+      setQuickConnecting(false);
+    }
   };
 
   const handleDisconnect = () => {
@@ -113,6 +146,38 @@ export function VoiceChatModal({ open, onClose }: VoiceChatModalProps) {
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+              {/* Quick connect: get token from AI-GF token server and connect */}
+              {TOKEN_API_URL && (
+                <div className="space-y-2 p-3 rounded-lg border border-[#00ffff]/20 bg-[#00ffff]/5">
+                  <span className="text-[10px] font-bold text-[#00ffff]/80 tracking-wider uppercase font-body">
+                    Quick connect (AI-GF backend)
+                  </span>
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <input
+                      type="text"
+                      value={roomName}
+                      onChange={(e) => setRoomName(e.target.value)}
+                      placeholder="Room name"
+                      disabled={isConnected || isConnecting}
+                      className="flex-1 min-w-[120px] px-3 py-2 bg-[#050714] border border-[#00ffff]/15 rounded-lg text-white text-sm font-body placeholder:text-gray-600 focus:outline-none focus:border-[#00ffff]/40 disabled:opacity-40"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleQuickConnect}
+                      disabled={isConnected || isConnecting || quickConnecting}
+                      className="px-4 py-2 bg-gradient-to-r from-[#00ffff] to-[#0099cc] text-black font-bold text-xs tracking-wider rounded-lg transition-all hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    >
+                      {quickConnecting ? "Connecting…" : "Quick connect"}
+                    </button>
+                  </div>
+                  {quickConnectError && (
+                    <p className="text-[10px] text-red-400 font-body">
+                      {quickConnectError}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 tracking-wider uppercase mb-1.5 font-body">
