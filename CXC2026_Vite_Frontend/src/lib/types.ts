@@ -1,6 +1,7 @@
 export interface Profile {
   id: string;
   user_id?: string;
+  uuid: string;
   display_name: string;
   age: number;
   gender: string;
@@ -8,6 +9,9 @@ export interface Profile {
   avatar_url: string | null;
   avatar_x: number;
   avatar_y: number;
+  banner_url: string | null;
+  banner_x: number;
+  banner_y: number;
   location: string;
   looking_for: string;
   interests: string[];

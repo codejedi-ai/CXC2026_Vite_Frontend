@@ -3,8 +3,17 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
+const DJANGO = 'http://localhost:8000';
+
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': { target: DJANGO, changeOrigin: true },
+      '/media': { target: DJANGO, changeOrigin: true },
+      '/ws': { target: DJANGO.replace('http', 'ws'), changeOrigin: true, ws: true },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

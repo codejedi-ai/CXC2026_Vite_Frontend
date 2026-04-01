@@ -1,5 +1,7 @@
-const BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api';
-const WS_BASE = BASE_URL.replace(/\/api$/, '').replace(/^http/, 'ws');
+const BASE_URL = (import.meta.env.VITE_API_URL as string) || '/api';
+// WebSocket always connects to the same host — Vite proxies /ws → Django in dev,
+// and in production the same host serves both HTTP and WS.
+const WS_BASE = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`;
 
 function getToken(key: 'access_token' | 'refresh_token') {
   return localStorage.getItem(key);

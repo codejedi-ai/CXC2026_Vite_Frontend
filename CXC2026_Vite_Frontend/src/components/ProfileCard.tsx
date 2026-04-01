@@ -23,12 +23,12 @@ export function ProfileCard({ profile }: ProfileCardProps) {
         className="glass-panel rounded-2xl overflow-hidden group cursor-pointer hover:border-[#00ffff]/30 transition-all duration-300"
       >
         <div className="relative h-64 overflow-hidden">
-          {profile.avatar_url ? (
+          {profile.banner_url ? (
             <img
-              src={profile.avatar_url}
+              src={profile.banner_url}
               alt={profile.display_name}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              style={{ objectPosition: `${profile.avatar_x ?? 50}% ${profile.avatar_y ?? 50}%` }}
+              style={{ objectPosition: `${profile.banner_x ?? 50}% ${profile.banner_y ?? 50}%` }}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#0a0b1a] to-[#1a0b2e] flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
