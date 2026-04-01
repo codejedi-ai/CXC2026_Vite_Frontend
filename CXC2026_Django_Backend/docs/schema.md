@@ -28,7 +28,7 @@ One-to-one with User. Created automatically on register.
 | age | INTEGER | default 20 |
 | gender | VARCHAR(50) | blank allowed |
 | bio | TEXT | blank allowed |
-| avatar_url | VARCHAR(200) | URL to image, blank allowed |
+| avatar | VARCHAR(100) | relative path under `MEDIA_ROOT/avatars/`, blank allowed |
 | location | VARCHAR(100) | blank allowed |
 | looking_for | VARCHAR(100) | blank allowed |
 | interests | JSON | array of strings, default [] |
@@ -53,6 +53,7 @@ auth_user ──< api_profile
 
 | Endpoint | Table(s) touched |
 |----------|-----------------|
+| POST `/api/profiles/me/avatar/` | api_profile (write avatar file, multipart/form-data field: `avatar`) |
 | POST `/api/auth/register/` | auth_user + api_profile (insert both) |
 | POST `/api/auth/login/` | auth_user (read, verify password) |
 | GET `/api/auth/me/` | auth_user (read) |

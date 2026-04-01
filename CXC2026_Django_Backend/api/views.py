@@ -54,7 +54,7 @@ def me(request):
 @permission_classes([IsAuthenticated])
 def profiles_list(request):
     profiles = Profile.objects.select_related('user').all()
-    return Response(ProfileSerializer(profiles, many=True).data)
+    return Response(ProfileSerializer(profiles, many=True, context={'request': request}).data)
 
 
 @api_view(['GET'])
@@ -64,7 +64,7 @@ def profile_detail(request, pk):
         profile = Profile.objects.get(pk=pk)
     except Profile.DoesNotExist:
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-    return Response(ProfileSerializer(profile).data)
+    return Response(ProfileSerializer(profile, context={'request': request}).data)
 
 
 @api_view(['GET', 'PUT'])
@@ -73,10 +73,23 @@ def my_profile(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
     if request.method == 'GET':
-        return Response(ProfileSerializer(profile).data)
+        return Response(ProfileSerializer(profile, context={'request': request}).data)
 
-    serializer = ProfileSerializer(profile, data=request.data, partial=True)
+    serializer = ProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     serializer.save()
     return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def my_avatar(request):
+    """Upload a profile picture. Send as multipart/form-data with field name 'avatar'."""
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    file = request.FILES.get('avatar')
+    if not file:
+        return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    profile.avatar = file
+    profile.save(update_fields=['avatar'])
+    return Response(ProfileSerializer(profile, context={'request': request}).data)

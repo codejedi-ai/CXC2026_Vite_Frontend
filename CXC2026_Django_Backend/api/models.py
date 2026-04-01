@@ -1,5 +1,12 @@
+import os
+
 from django.db import models
 from django.contrib.auth.models import User
+
+
+def _avatar_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower()
+    return f"avatars/user_{instance.user_id}{ext}"
 
 
 class Profile(models.Model):
@@ -8,7 +15,7 @@ class Profile(models.Model):
     age = models.IntegerField(default=20)
     gender = models.CharField(max_length=50, blank=True)
     bio = models.TextField(blank=True)
-    avatar_url = models.URLField(blank=True)
+    avatar = models.ImageField(upload_to=_avatar_path, blank=True)
     location = models.CharField(max_length=100, blank=True)
     looking_for = models.CharField(max_length=100, blank=True)
     interests = models.JSONField(default=list)

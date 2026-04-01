@@ -1,5 +1,7 @@
 # UW-Crushes: The Voice-First Character AI for Waterloo
 
+> **Inspired by** the viral Waterloo Tech Week DSC AI Girlfriend event — watch the original video in [`docs/`](docs/).
+
 ## 💡 Inspiration
 Let’s be real: Waterloo students are world-class at solving LeetCode Hards, but "talking to actual humans" remains an NP-hard problem for many of us. We spend all our time in the DC Library or the E7 sub-basement, creating a campus culture that is notoriously socially isolated.
 

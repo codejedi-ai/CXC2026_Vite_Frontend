@@ -66,6 +66,9 @@ CHANNEL_LAYERS = {
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
+MEDIA_ROOT = DATA_DIR / "media"
+MEDIA_URL = "/media/"
+
 if IS_HEROKU_APP:
     DATABASES = {
         "default": dj_database_url.config(

@@ -31,6 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
+    avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
@@ -39,4 +40,12 @@ class ProfileSerializer(serializers.ModelSerializer):
             'avatar_url', 'location', 'looking_for', 'interests',
             'compatibility_score', 'online_status', 'type',
         ]
-        read_only_fields = ['id', 'user_id', 'compatibility_score', 'type']
+        read_only_fields = ['id', 'user_id', 'compatibility_score', 'type', 'avatar_url']
+
+    def get_avatar_url(self, obj):
+        if not obj.avatar:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.avatar.url)
+        return obj.avatar.url
