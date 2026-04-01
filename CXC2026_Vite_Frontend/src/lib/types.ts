@@ -6,6 +6,8 @@ export interface Profile {
   gender: string;
   bio: string;
   avatar_url: string | null;
+  avatar_x: number;
+  avatar_y: number;
   location: string;
   looking_for: string;
   interests: string[];

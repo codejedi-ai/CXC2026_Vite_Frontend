@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCamera, FaSave, FaTimes, FaPlus, FaCheck } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
@@ -52,7 +52,10 @@ export default function MyProfilePage() {
   const { user } = useAuth();
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarX, setAvatarX] = useState(50);
+  const [avatarY, setAvatarY] = useState(50);
   const [uploading, setUploading] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; startAx: number; startAy: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -75,6 +78,8 @@ export default function MyProfilePage() {
           interests: data.interests || [],
         });
         setAvatarUrl(data.avatar_url || null);
+        setAvatarX(data.avatar_x ?? 50);
+        setAvatarY(data.avatar_y ?? 50);
         setHasProfile(true);
       }
       setLoading(false);
@@ -101,6 +106,8 @@ export default function MyProfilePage() {
       location: form.location.trim(),
       looking_for: form.looking_for,
       interests: form.interests,
+      avatar_x: avatarX,
+      avatar_y: avatarY,
     };
 
     const result = await api.saveMyProfile(payload);
@@ -166,16 +173,49 @@ export default function MyProfilePage() {
         >
           <div className="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
             <SectionLabel text="AVATAR" />
-            <div className="flex items-center gap-5">
-              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#00ffff]/20 bg-[#0a0b1a] flex-shrink-0">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <FaCamera className="text-gray-600 text-xl" />
-                  </div>
+            <div className="flex items-start gap-5">
+              {/* Circle preview with drag-to-reposition */}
+              <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                <div
+                  className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-[#00ffff]/30 bg-[#0a0b1a] select-none"
+                  style={{ cursor: avatarUrl ? "grab" : "default" }}
+                  onMouseDown={avatarUrl ? (e) => {
+                    e.preventDefault();
+                    dragRef.current = { startX: e.clientX, startY: e.clientY, startAx: avatarX, startAy: avatarY };
+                    const onMove = (mv: MouseEvent) => {
+                      if (!dragRef.current) return;
+                      const dx = (mv.clientX - dragRef.current.startX) / 2;
+                      const dy = (mv.clientY - dragRef.current.startY) / 2;
+                      setAvatarX(Math.min(100, Math.max(0, dragRef.current.startAx - dx)));
+                      setAvatarY(Math.min(100, Math.max(0, dragRef.current.startAy - dy)));
+                    };
+                    const onUp = () => {
+                      dragRef.current = null;
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  } : undefined}
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Avatar"
+                      className="w-full h-full object-cover pointer-events-none"
+                      style={{ objectPosition: `${avatarX}% ${avatarY}%` }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <FaCamera className="text-gray-600 text-xl" />
+                    </div>
+                  )}
+                </div>
+                {avatarUrl && (
+                  <p className="text-[10px] text-gray-600 font-body">drag to reposition</p>
                 )}
               </div>
+
               <div className="flex-1">
                 <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#00ffff]/15 text-[#00ffff] text-sm font-body cursor-pointer hover:border-[#00ffff]/40 transition-all">
                   <FaCamera className="text-xs" />
@@ -191,13 +231,18 @@ export default function MyProfilePage() {
                       setUploading(true);
                       const result = await api.uploadAvatar(file);
                       setUploading(false);
-                      if (result.data) setAvatarUrl(result.data.avatar_url ?? null);
-                      else setError(result.error ?? "Upload failed");
+                      if (result.data) {
+                        setAvatarUrl(result.data.avatar_url ?? null);
+                        setAvatarX(50);
+                        setAvatarY(50);
+                      } else {
+                        setError(result.error ?? "Upload failed");
+                      }
                     }}
                   />
                 </label>
                 <p className="text-[11px] text-gray-600 mt-1.5 font-body">
-                  Stored as <code className="text-gray-500">user_{user?.id}</code> on the server
+                  Saved as <code className="text-gray-500">{user?.id}_filename</code> on the server
                 </p>
               </div>
             </div>

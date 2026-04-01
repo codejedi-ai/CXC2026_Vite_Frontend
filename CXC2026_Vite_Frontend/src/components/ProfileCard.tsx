@@ -28,6 +28,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
               src={profile.avatar_url}
               alt={profile.display_name}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              style={{ objectPosition: `${profile.avatar_x ?? 50}% ${profile.avatar_y ?? 50}%` }}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#0a0b1a] to-[#1a0b2e] flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
