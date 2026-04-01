@@ -123,4 +123,18 @@ export const api = {
     if (!res.ok) return { data: null, error: Object.values(json).flat().join(' ') };
     return { data: json, error: null };
   },
+
+  async uploadAvatar(file: File) {
+    const token = getToken('access_token');
+    const body = new FormData();
+    body.append('avatar', file);
+    const res = await fetch(`${BASE_URL}/profiles/me/avatar/`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body,
+    });
+    const json = await res.json();
+    if (!res.ok) return { data: null, error: (json.detail as string) ?? 'Upload failed' };
+    return { data: json, error: null };
+  },
 };

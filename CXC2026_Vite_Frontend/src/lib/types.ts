@@ -5,7 +5,7 @@ export interface Profile {
   age: number;
   gender: string;
   bio: string;
-  avatar_url: string;
+  avatar_url: string | null;
   location: string;
   looking_for: string;
   interests: string[];

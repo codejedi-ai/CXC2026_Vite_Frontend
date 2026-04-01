@@ -33,7 +33,6 @@ interface ProfileForm {
   age: number;
   gender: string;
   bio: string;
-  avatar_url: string;
   location: string;
   looking_for: string;
   interests: string[];
@@ -44,7 +43,6 @@ const EMPTY_FORM: ProfileForm = {
   age: 20,
   gender: "",
   bio: "",
-  avatar_url: "",
   location: "",
   looking_for: "",
   interests: [],
@@ -53,6 +51,8 @@ const EMPTY_FORM: ProfileForm = {
 export default function MyProfilePage() {
   const { user } = useAuth();
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -70,11 +70,11 @@ export default function MyProfilePage() {
           age: data.age || 20,
           gender: data.gender || "",
           bio: data.bio || "",
-          avatar_url: data.avatar_url || "",
           location: data.location || "",
           looking_for: data.looking_for || "",
           interests: data.interests || [],
         });
+        setAvatarUrl(data.avatar_url || null);
         setHasProfile(true);
       }
       setLoading(false);
@@ -98,7 +98,6 @@ export default function MyProfilePage() {
       age: form.age,
       gender: form.gender,
       bio: form.bio.trim(),
-      avatar_url: form.avatar_url.trim(),
       location: form.location.trim(),
       looking_for: form.looking_for,
       interests: form.interests,
@@ -169,15 +168,8 @@ export default function MyProfilePage() {
             <SectionLabel text="AVATAR" />
             <div className="flex items-center gap-5">
               <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#00ffff]/20 bg-[#0a0b1a] flex-shrink-0">
-                {form.avatar_url ? (
-                  <img
-                    src={form.avatar_url}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <FaCamera className="text-gray-600 text-xl" />
@@ -185,14 +177,28 @@ export default function MyProfilePage() {
                 )}
               </div>
               <div className="flex-1">
-                <input
-                  type="url"
-                  placeholder="Paste image URL..."
-                  value={form.avatar_url}
-                  onChange={(e) => setForm((p) => ({ ...p, avatar_url: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#00ffff]/15 text-white text-sm font-body placeholder-gray-600 focus:outline-none focus:border-[#00ffff]/40 transition-all"
-                />
-                <p className="text-[11px] text-gray-600 mt-1.5 font-body">Direct link to your photo</p>
+                <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-[#0a0b1a]/80 border border-[#00ffff]/15 text-[#00ffff] text-sm font-body cursor-pointer hover:border-[#00ffff]/40 transition-all">
+                  <FaCamera className="text-xs" />
+                  {uploading ? "UPLOADING..." : avatarUrl ? "CHANGE PHOTO" : "UPLOAD PHOTO"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploading(true);
+                      const result = await api.uploadAvatar(file);
+                      setUploading(false);
+                      if (result.data) setAvatarUrl(result.data.avatar_url ?? null);
+                      else setError(result.error ?? "Upload failed");
+                    }}
+                  />
+                </label>
+                <p className="text-[11px] text-gray-600 mt-1.5 font-body">
+                  Stored as <code className="text-gray-500">user_{user?.id}</code> on the server
+                </p>
               </div>
             </div>
 
