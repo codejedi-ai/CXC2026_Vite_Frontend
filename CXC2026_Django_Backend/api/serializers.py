@@ -37,7 +37,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = [
             'id', 'user_id', 'display_name', 'age', 'gender', 'bio',
-            'avatar_url', 'location', 'looking_for', 'interests',
+            'avatar_url', 'avatar_x', 'avatar_y', 'location', 'looking_for', 'interests',
             'compatibility_score', 'online_status', 'type',
         ]
         read_only_fields = ['id', 'user_id', 'compatibility_score', 'type', 'avatar_url']

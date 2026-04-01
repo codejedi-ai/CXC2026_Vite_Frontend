@@ -6,7 +6,8 @@ from django.contrib.auth.models import User
 
 def _avatar_path(instance, filename):
     ext = os.path.splitext(filename)[1].lower()
-    return f"avatars/user_{instance.user_id}{ext}"
+    stem = os.path.splitext(filename)[0]
+    return f"img_avatars/{instance.user_id}_{stem}{ext}"
 
 
 class Profile(models.Model):
@@ -16,6 +17,8 @@ class Profile(models.Model):
     gender = models.CharField(max_length=50, blank=True)
     bio = models.TextField(blank=True)
     avatar = models.ImageField(upload_to=_avatar_path, blank=True)
+    avatar_x = models.FloatField(default=50.0)
+    avatar_y = models.FloatField(default=50.0)
     location = models.CharField(max_length=100, blank=True)
     looking_for = models.CharField(max_length=100, blank=True)
     interests = models.JSONField(default=list)
