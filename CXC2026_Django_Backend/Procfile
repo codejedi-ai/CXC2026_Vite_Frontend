@@ -1,2 +1,2 @@
-web: gunicorn --config gunicorn.conf.py config.wsgi
+web: daphne -b 0.0.0.0 -p $PORT config.asgi:application
 release: ./manage.py migrate --no-input

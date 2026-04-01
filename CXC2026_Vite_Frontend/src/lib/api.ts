@@ -1,4 +1,5 @@
 const BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api';
+const WS_BASE = BASE_URL.replace(/\/api$/, '').replace(/^http/, 'ws');
 
 function getToken(key: 'access_token' | 'refresh_token') {
   return localStorage.getItem(key);
@@ -35,6 +36,37 @@ async function request(path: string, options: RequestInit = {}): Promise<Respons
   }
 
   return res;
+}
+
+/**
+ * Open a relay WebSocket to the Django backend for a chat session with an AI profile.
+ *
+ * Messages flow:  Frontend → Django → AI Agent → Django → Frontend
+ *
+ * @param profileId  The Profile.id of the AI being chatted with
+ * @param onMessage  Called with every parsed JSON message from the agent
+ * @param onClose    Called when the socket closes (optional)
+ * @returns The WebSocket instance — call .send(JSON.stringify({...})) to talk to the agent
+ */
+export function createChatSocket(
+  profileId: string | number,
+  onMessage: (data: Record<string, unknown>) => void,
+  onClose?: () => void,
+): WebSocket {
+  const token = getToken('access_token') ?? '';
+  const ws = new WebSocket(`${WS_BASE}/ws/chat/${profileId}/?token=${token}`);
+
+  ws.onmessage = (event) => {
+    try {
+      onMessage(JSON.parse(event.data as string));
+    } catch {
+      onMessage({ type: 'raw', message: event.data });
+    }
+  };
+
+  if (onClose) ws.onclose = onClose;
+
+  return ws;
 }
 
 export const api = {

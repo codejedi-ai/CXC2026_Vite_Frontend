@@ -23,10 +23,12 @@ else:
 
 
 INSTALLED_APPS = [
+    "daphne",                         # must be first — overrides runserver with ASGI
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "rest_framework",
     "corsheaders",
+    "channels",
     "api",
 ]
 
@@ -52,6 +54,20 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}
+
+# Runtime data directory (gitignored) — use for uploads, caches, agent artefacts
+DATA_DIR = BASE_DIR / "data"
+DATA_DIR.mkdir(exist_ok=True)
+
+# AI agent WebSocket base URL — override via env var in production
+AI_AGENT_WS_URL = os.environ.get("AI_AGENT_WS_URL", "ws://localhost:8001/ws/chat")
 
 
 if IS_HEROKU_APP:
