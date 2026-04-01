@@ -66,10 +66,6 @@ CHANNEL_LAYERS = {
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
-# AI agent WebSocket base URL — override via env var in production
-AI_AGENT_WS_URL = os.environ.get("AI_AGENT_WS_URL", "ws://localhost:8001/ws/chat")
-
-
 if IS_HEROKU_APP:
     DATABASES = {
         "default": dj_database_url.config(

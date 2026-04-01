@@ -59,3 +59,28 @@ auth_user ──< api_profile
 | GET `/api/profiles/` | api_profile JOIN auth_user (read all) |
 | GET/PUT `/api/profiles/me/` | api_profile (read/write own row) |
 | GET `/api/profiles/<id>/` | api_profile (read single row) |
+
+---
+
+## WebSocket Endpoints
+
+Django is the relay hub. All traffic passes through a shared channel group `chat_<profile_id>`.
+
+| Path | Who connects | Auth |
+|------|-------------|------|
+| `ws://<host>/ws/chat/<profile_id>/?token=<jwt>` | Browser / frontend | JWT access token in query string |
+| `ws://<host>/ws/agent/<profile_id>/?secret=<AGENT_SECRET>` | AI agents | `AGENT_SECRET` env var (optional; open in dev) |
+
+### Message flow
+
+```
+Browser  →  Django ChatConsumer  →  group_send(type: "to_agent")
+                                        ↓
+                              AgentConsumer.to_agent()  →  AI agent
+
+AI agent  →  AgentConsumer.receive()  →  group_send(type: "to_frontend")
+                                            ↓
+                                  ChatConsumer.to_frontend()  →  Browser
+```
+
+All messages are JSON strings. Structure is defined by the AI agent implementation.
