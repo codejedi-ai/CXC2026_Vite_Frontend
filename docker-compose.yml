@@ -8,6 +8,10 @@ services:
       DATABASE_URL: ${DATABASE_URL:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
       AGENT_SECRET: ${AGENT_SECRET:-}
+    ports:
+      # Exposed for AI agents connecting from outside Docker (ws://<host>:8000/ws/agent/<id>/)
+      # Browser traffic does NOT use this — it goes through Nginx on port 80.
+      - "8000:8000"
     volumes:
       - backend_data:/app/data
     restart: unless-stopped
