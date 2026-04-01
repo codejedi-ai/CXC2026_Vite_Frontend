@@ -68,7 +68,9 @@ DATA_DIR.mkdir(exist_ok=True)
 
 BUCKETS_DIR = DATA_DIR / "buckets"
 BUCKETS_DIR.mkdir(exist_ok=True)
-(BUCKETS_DIR / "logs").mkdir(exist_ok=True)
+
+LOGS_DIR = DATA_DIR / "logs"
+LOGS_DIR.mkdir(exist_ok=True)
 
 MEDIA_ROOT = BUCKETS_DIR
 MEDIA_URL = "/media/"
@@ -141,7 +143,7 @@ LOGGING = {
         "console": {"class": "logging.StreamHandler", "formatter": "simple"},
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": BUCKETS_DIR / "logs" / "django.log",
+            "filename": LOGS_DIR / "django.log",
             "maxBytes": 10 * 1024 * 1024,  # 10 MB
             "backupCount": 5,
             "formatter": "verbose",
