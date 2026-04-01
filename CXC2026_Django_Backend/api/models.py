@@ -1,13 +1,8 @@
 import os
-import re
 import uuid as uuid_lib
 
 from django.db import models
 from django.contrib.auth.models import User
-
-
-def _slug(name: str) -> str:
-    return re.sub(r'[^a-z0-9]+', '_', (name or '').lower()).strip('_') or 'user'
 
 
 def _prefix(profile) -> str:
@@ -17,19 +12,19 @@ def _prefix(profile) -> str:
 def _avatar_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_avatars/{_prefix(p)}_{p.uuid}_{_slug(p.display_name)}{ext}"
+    return f"img_avatars/{_prefix(p)}_{p.uuid}{ext}"
 
 
 def _banner_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_banners/{_prefix(p)}_{p.uuid}_{_slug(p.display_name)}{ext}"
+    return f"img_banners/{_prefix(p)}_{p.uuid}{ext}"
 
 
 def _personal_path(instance, filename):
     p = instance.profile
     ext = os.path.splitext(filename)[1].lower()
-    return f"img_personal/{_prefix(p)}_{p.uuid}_{_slug(p.display_name)}{ext}"
+    return f"img_personal/{_prefix(p)}_{p.uuid}{ext}"
 
 
 class Profile(models.Model):
