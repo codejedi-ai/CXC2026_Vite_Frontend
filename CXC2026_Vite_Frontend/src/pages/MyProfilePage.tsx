@@ -51,6 +51,7 @@ const EMPTY_FORM: ProfileForm = {
 export default function MyProfilePage() {
   const { user } = useAuth();
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM);
+  const [profileUuid, setProfileUuid] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarX, setAvatarX] = useState(50);
   const [avatarY, setAvatarY] = useState(50);
@@ -77,6 +78,7 @@ export default function MyProfilePage() {
           looking_for: data.looking_for || "",
           interests: data.interests || [],
         });
+        setProfileUuid(data.uuid || null);
         setAvatarUrl(data.avatar_url || null);
         setAvatarX(data.avatar_x ?? 50);
         setAvatarY(data.avatar_y ?? 50);
@@ -242,7 +244,7 @@ export default function MyProfilePage() {
                   />
                 </label>
                 <p className="text-[11px] text-gray-600 mt-1.5 font-body">
-                  Saved as <code className="text-gray-500">{user?.id}_filename</code> on the server
+                  UUID: <code className="text-gray-500 break-all">{profileUuid ?? '...'}</code>
                 </p>
               </div>
             </div>

@@ -7,9 +7,11 @@ export interface Profile {
   gender: string;
   bio: string;
   avatar_url: string | null;
+  avatar_urls: string[];
   avatar_x: number;
   avatar_y: number;
   banner_url: string | null;
+  banner_urls: string[];
   banner_x: number;
   banner_y: number;
   location: string;

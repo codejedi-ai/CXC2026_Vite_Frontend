@@ -5,6 +5,7 @@ import { FaMapMarkerAlt, FaHeart, FaArrowLeft, FaComment } from "react-icons/fa"
 import { HiSparkles, HiBolt } from "react-icons/hi2";
 import { api } from "@/lib/api";
 import type { Profile } from "@/lib/types";
+import { ImageSlideshow } from "@/components/ImageSlideshow";
 
 export default function ProfileDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -51,16 +52,15 @@ export default function ProfileDetailPage() {
   return (
     <div className="min-h-screen pb-20">
       <div className="relative h-[50vh] sm:h-[60vh] overflow-hidden">
-        {profile.banner_url ? (
-          <img
-            src={profile.banner_url}
-            alt={profile.display_name}
-            className="w-full h-full object-cover"
-            style={{ objectPosition: `${profile.banner_x ?? 50}% ${profile.banner_y ?? 50}%` }}
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#0a0b1a] to-[#1a0b2e]" />
-        )}
+        <ImageSlideshow
+          urls={profile.banner_urls ?? (profile.banner_url ? [profile.banner_url] : [])}
+          objectX={profile.banner_x}
+          objectY={profile.banner_y}
+          alt={profile.display_name}
+          className="w-full h-full object-cover"
+          interval={5000}
+          fallback={<div className="w-full h-full bg-gradient-to-br from-[#0a0b1a] to-[#1a0b2e]" />}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050714] via-[#050714]/60 to-transparent" />
 
         <motion.div

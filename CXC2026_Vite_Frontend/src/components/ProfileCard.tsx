@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { FaMapMarkerAlt, FaHeart } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
 import type { Profile } from "@/lib/types";
+import { ImageSlideshow } from "@/components/ImageSlideshow";
 interface ProfileCardProps {
   profile: Profile;
 }
@@ -23,20 +24,20 @@ export function ProfileCard({ profile }: ProfileCardProps) {
         className="glass-panel rounded-2xl overflow-hidden group cursor-pointer hover:border-[#00ffff]/30 transition-all duration-300"
       >
         <div className="relative h-64 overflow-hidden">
-          {profile.banner_url ? (
-            <img
-              src={profile.banner_url}
-              alt={profile.display_name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              style={{ objectPosition: `${profile.banner_x ?? 50}% ${profile.banner_y ?? 50}%` }}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-[#0a0b1a] to-[#1a0b2e] flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
-              <span className="text-5xl font-bold text-[#00ffff]/30 font-display select-none">
-                {profile.display_name?.[0]?.toUpperCase() ?? "?"}
-              </span>
-            </div>
-          )}
+          <ImageSlideshow
+            urls={profile.banner_urls ?? (profile.banner_url ? [profile.banner_url] : [])}
+            objectX={profile.banner_x}
+            objectY={profile.banner_y}
+            alt={profile.display_name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            fallback={
+              <div className="w-full h-full bg-gradient-to-br from-[#0a0b1a] to-[#1a0b2e] flex items-center justify-center">
+                <span className="text-5xl font-bold text-[#00ffff]/30 font-display select-none">
+                  {profile.display_name?.[0]?.toUpperCase() ?? "?"}
+                </span>
+              </div>
+            }
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-[#050714] via-[#050714]/20 to-transparent" />
 
           <div className="absolute top-4 left-4 flex flex-col gap-2">
