@@ -21,6 +21,17 @@ Pure REST API backend. Handles authentication, user profiles, and the database.
 | GET/PUT | `/api/profiles/me/` | JWT | Your profile |
 | GET | `/api/profiles/<id>/` | JWT | Single profile |
 
+## Schema
+
+See [`docs/schema.md`](docs/schema.md) for full table definitions and API mapping.
+
+Two tables: `auth_user` (Django built-in) and `api_profile` (one-to-one with user).
+
+## Database
+
+- **Development**: SQLite (`db.sqlite3` in project root, auto-created on first migrate)
+- **Production**: PostgreSQL via `DATABASE_URL` env var
+
 ## Run
 
 ```bash
